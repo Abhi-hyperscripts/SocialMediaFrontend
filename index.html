@@ -219,6 +219,26 @@
                     <div class="coord-label">Timestamp</div>
                     <div class="coord-value" id="timestamp">-</div>
                 </div>
+                
+                <div class="coord-item">
+                    <div class="coord-label">Altitude</div>
+                    <div class="coord-value" id="altitude">-</div>
+                </div>
+                
+                <div class="coord-item">
+                    <div class="coord-label">Altitude Accuracy</div>
+                    <div class="coord-value" id="altitudeAccuracy">-</div>
+                </div>
+                
+                <div class="coord-item">
+                    <div class="coord-label">Speed</div>
+                    <div class="coord-value" id="speed">-</div>
+                </div>
+                
+                <div class="coord-item">
+                    <div class="coord-label">Heading</div>
+                    <div class="coord-value" id="heading">-</div>
+                </div>
             </div>
             
             <div class="map-container" id="mapContainer">
@@ -261,7 +281,7 @@
                 errorCallback,
                 {
                     enableHighAccuracy: true,
-                    timeout: 30000,
+                    timeout: 10000,
                     maximumAge: 0
                 }
             );
@@ -276,12 +296,46 @@
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
             const accuracy = position.coords.accuracy;
+            const altitude = position.coords.altitude;
+            const altitudeAccuracy = position.coords.altitudeAccuracy;
+            const speed = position.coords.speed;
+            const heading = position.coords.heading;
             
             // Update UI with coordinates
             document.getElementById('latitude').textContent = lat.toFixed(6) + '°';
             document.getElementById('longitude').textContent = lon.toFixed(6) + '°';
             document.getElementById('accuracy').textContent = accuracy.toFixed(0) + ' meters';
             document.getElementById('timestamp').textContent = new Date(position.timestamp).toLocaleTimeString();
+            
+            // Update altitude (may be null on some devices)
+            if (altitude !== null) {
+                document.getElementById('altitude').textContent = altitude.toFixed(1) + ' meters';
+            } else {
+                document.getElementById('altitude').textContent = 'Not available';
+            }
+            
+            // Update altitude accuracy
+            if (altitudeAccuracy !== null) {
+                document.getElementById('altitudeAccuracy').textContent = '±' + altitudeAccuracy.toFixed(1) + ' meters';
+            } else {
+                document.getElementById('altitudeAccuracy').textContent = 'Not available';
+            }
+            
+            // Update speed (null if stationary)
+            if (speed !== null) {
+                document.getElementById('speed').textContent = (speed * 3.6).toFixed(1) + ' km/h';
+            } else {
+                document.getElementById('speed').textContent = 'Stationary';
+            }
+            
+            // Update heading (direction of travel)
+            if (heading !== null) {
+                const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+                const index = Math.round(heading / 45) % 8;
+                document.getElementById('heading').textContent = heading.toFixed(0) + '° (' + directions[index] + ')';
+            } else {
+                document.getElementById('heading').textContent = 'Not moving';
+            }
             
             // Show location info section
             locationInfo.classList.add('show');
