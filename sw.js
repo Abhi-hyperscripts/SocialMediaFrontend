@@ -3,8 +3,8 @@
  * Automatically handles caching, updates, and permissions
  */
 
-const CACHE_NAME = 'pwa-cache-v1';
-const CACHE_VERSION = 1;
+const CACHE_NAME = 'pwa-cache-v2';
+const CACHE_VERSION = 2;
 
 // Get base path
 const BASE_PATH = self.location.pathname.substring(0, self.location.pathname.lastIndexOf('/') + 1);
