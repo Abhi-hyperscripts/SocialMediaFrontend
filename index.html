@@ -5,21 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#667eea">
     <meta name="description" content="Track your location with GPS and view it on Google Maps">
+    
+    <!-- iOS PWA Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Location Tracker">
     
-    <title>Geolocation with Google Maps</title>
+    <title>Location Tracker</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
     
-    <!-- Icons for iOS -->
+    <!-- Icons -->
     <link rel="apple-touch-icon" href="./icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
     
-    <!-- SQL.js Library from CDN -->
+    <!-- SQL.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
     
     <style>
@@ -234,12 +236,81 @@
             background: #f0f0f0;
         }
 
+        .update-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #667eea;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .update-notification.show {
+            display: flex;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { transform: translate(-50%, -100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        .update-notification button {
+            padding: 8px 16px;
+            font-size: 14px;
+            background: white;
+            color: #667eea;
+            margin: 0;
+        }
+
+        .ios-notice {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .ios-notice.show {
+            display: block;
+        }
+
+        .ios-notice h3 {
+            margin-bottom: 8px;
+            color: #1976d2;
+            font-size: 16px;
+        }
+
+        .ios-notice ol {
+            margin: 8px 0 0 20px;
+            padding: 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .storage-info {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
         /* History Section */
         .history-section {
             background: white;
             border-radius: 15px;
             padding: 20px;
-            margin-bottom: 30px;
+            margin-top: 20px;
             display: none;
         }
 
@@ -248,142 +319,119 @@
             animation: fadeIn 0.5s ease;
         }
 
-        .history-item {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: transform 0.2s;
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
         }
 
-        .history-item:hover {
-            transform: translateX(5px);
+        .history-table th,
+        .history-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
         }
 
-        .history-item-header {
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 5px;
+        .history-table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
         }
 
-        .history-item-details {
-            font-size: 14px;
-            color: #666;
+        .history-table tr:hover {
+            background: #f5f5f5;
         }
 
-        .db-stats {
-            background: #e3f2fd;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+        .no-history {
             text-align: center;
-        }
-
-        .db-stats strong {
-            color: #667eea;
-            font-size: 24px;
-        }
-        
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 2em;
-            }
-            
-            .map-container iframe {
-                height: 350px;
-            }
-
-            .install-banner {
-                flex-direction: column;
-            }
-
-            .button-container {
-                flex-direction: column;
-            }
-
-            .button-container button {
-                width: 100%;
-            }
+            padding: 30px;
+            color: #999;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Install prompt banner -->
+        <h1>📍 Location Tracker</h1>
+
+        <!-- Update Notification -->
+        <div id="updateNotification" class="update-notification">
+            <span>New version available!</span>
+            <button onclick="reloadApp()">Update Now</button>
+        </div>
+
+        <!-- Install Banner -->
         <div id="installBanner" class="install-banner">
-            <span>📱 Install this app on your home screen for quick access!</span>
+            <span>📱 Install this app for the best experience!</span>
             <div>
-                <button id="installBtn" onclick="installApp()">Install</button>
-                <button onclick="dismissInstallBanner()" style="background: transparent; color: white; border: 1px solid white;">Later</button>
+                <button onclick="installPWA()">Install</button>
+                <button onclick="dismissInstallBanner()" style="background: transparent; border: 1px solid white;">Later</button>
             </div>
         </div>
 
-        <h1>📍 Location Tracker with Abhishek 3</h1>
-        
-        <div id="dbStatus" class="status"></div>
-        
+        <!-- iOS Notice -->
+        <div id="iosNotice" class="ios-notice">
+            <h3>📱 iOS Users</h3>
+            <ol>
+                <li>Tap the button below to enable location access</li>
+                <li>Select "Allow" when prompted</li>
+                <li>If blocked, go to Settings → Safari → Location → Allow</li>
+                <li>Ensure Location Services is ON in device Settings</li>
+            </ol>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMsg" class="error"></div>
+
+        <!-- Status Message -->
+        <div id="status" class="status"></div>
+
+        <!-- Buttons -->
         <div class="button-container">
             <button id="getLocationBtn" onclick="getLocation()">Get My Location</button>
             <button class="secondary" onclick="showHistory()">View History</button>
             <button class="danger" onclick="clearHistory()">Clear History</button>
         </div>
-        
-        <div id="errorMsg" class="error"></div>
-        <div id="status" class="status"></div>
 
-        <!-- Database Statistics -->
-        <div id="dbStatsSection" class="db-stats" style="display: none;">
-            <div>Total Locations Saved: <strong id="locationCount">0</strong></div>
-        </div>
-        
-        <!-- Current Location Info -->
+        <!-- Location Info -->
         <div id="locationInfo" class="info-section">
-            <h2 style="margin-bottom: 20px; color: #333;">Your Current Location</h2>
-            
             <div class="coordinates">
                 <div class="coord-item">
                     <div class="coord-label">Latitude</div>
-                    <div class="coord-value" id="latitude">-</div>
+                    <div id="latitude" class="coord-value">--</div>
                 </div>
-                
                 <div class="coord-item">
                     <div class="coord-label">Longitude</div>
-                    <div class="coord-value" id="longitude">-</div>
+                    <div id="longitude" class="coord-value">--</div>
                 </div>
-                
                 <div class="coord-item">
                     <div class="coord-label">Accuracy</div>
-                    <div class="coord-value" id="accuracy">-</div>
+                    <div id="accuracy" class="coord-value">--</div>
                 </div>
-                
                 <div class="coord-item">
-                    <div class="coord-label">Timestamp</div>
-                    <div class="coord-value" id="timestamp">-</div>
+                    <div class="coord-label">Time</div>
+                    <div id="timestamp" class="coord-value">--</div>
                 </div>
-                
                 <div class="coord-item">
                     <div class="coord-label">Altitude</div>
-                    <div class="coord-value" id="altitude">-</div>
+                    <div id="altitude" class="coord-value">--</div>
                 </div>
-                
                 <div class="coord-item">
-                    <div class="coord-label">Altitude Accuracy</div>
-                    <div class="coord-value" id="altitudeAccuracy">-</div>
+                    <div class="coord-label">Alt. Accuracy</div>
+                    <div id="altitudeAccuracy" class="coord-value">--</div>
                 </div>
-                
                 <div class="coord-item">
                     <div class="coord-label">Speed</div>
-                    <div class="coord-value" id="speed">-</div>
+                    <div id="speed" class="coord-value">--</div>
                 </div>
-                
                 <div class="coord-item">
                     <div class="coord-label">Heading</div>
-                    <div class="coord-value" id="heading">-</div>
+                    <div id="heading" class="coord-value">--</div>
                 </div>
             </div>
-            
-            <div class="map-container" id="mapContainer">
+
+            <div id="storageInfo" class="storage-info"></div>
+
+            <div id="mapContainer" class="map-container">
                 <div class="loading">
                     <div class="loading-spinner"></div>
                     <p>Loading map...</p>
@@ -393,43 +441,46 @@
 
         <!-- History Section -->
         <div id="historySection" class="history-section">
-            <h2 style="margin-bottom: 20px; color: #333;">Location History</h2>
-            <div id="historyList"></div>
+            <h2>Location History</h2>
+            <div id="historyContent">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading history...</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Get the base path dynamically
+        // ============================================================================
+        // GLOBAL VARIABLES
+        // ============================================================================
+        let db = null;
+        let deferredPrompt = null;
         const BASE_PATH = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
         
-        // SQLite Database
-        let db = null;
-        let SQL = null;
+        // Detect iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-        // Initialize SQLite Database
+        // ============================================================================
+        // DATABASE FUNCTIONS
+        // ============================================================================
         async function initDatabase() {
             try {
-                const dbStatus = document.getElementById('dbStatus');
-                dbStatus.textContent = '🔄 Initializing SQLite database...';
-                dbStatus.classList.add('show');
-                dbStatus.style.background = '#fff3cd';
-                dbStatus.style.color = '#856404';
-
-                // Initialize SQL.js
-                SQL = await initSqlJs({
+                const SQL = await initSqlJs({
                     locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
                 });
 
                 // Try to load existing database from localStorage
-                const savedDb = localStorage.getItem('locationDatabase');
+                const savedDb = localStorage.getItem('locationDb');
                 if (savedDb) {
                     const uint8Array = new Uint8Array(JSON.parse(savedDb));
                     db = new SQL.Database(uint8Array);
-                    console.log('Loaded existing database from localStorage');
+                    console.log('✅ Loaded existing database');
                 } else {
-                    // Create new database
                     db = new SQL.Database();
-                    console.log('Created new database');
+                    console.log('✅ Created new database');
                 }
 
                 // Create table if it doesn't exist
@@ -443,45 +494,22 @@
                         altitude_accuracy REAL,
                         speed REAL,
                         heading REAL,
-                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        notes TEXT
+                        timestamp INTEGER NOT NULL
                     )
                 `);
 
-                // Save database to localStorage
-                saveDatabase();
+                // Create index for faster queries
+                db.run('CREATE INDEX IF NOT EXISTS idx_timestamp ON locations(timestamp DESC)');
 
-                dbStatus.textContent = '✅ SQLite database ready!';
-                dbStatus.style.background = '#d4edda';
-                dbStatus.style.color = '#155724';
-
-                // Update stats
-                updateStats();
-
-                setTimeout(() => {
-                    dbStatus.classList.remove('show');
-                }, 3000);
-
+                console.log('✅ Database initialized');
+                
+                // Check storage quota
+                await checkStorageQuota();
             } catch (error) {
-                console.error('Database initialization error:', error);
-                const dbStatus = document.getElementById('dbStatus');
-                dbStatus.textContent = '❌ Database initialization failed: ' + error.message;
-                dbStatus.style.background = '#f8d7da';
-                dbStatus.style.color = '#721c24';
+                console.error('❌ Database initialization failed:', error);
             }
         }
 
-        // Save database to localStorage
-        function saveDatabase() {
-            if (db) {
-                const data = db.export();
-                const buffer = Array.from(data);
-                localStorage.setItem('locationDatabase', JSON.stringify(buffer));
-                console.log('Database saved to localStorage');
-            }
-        }
-
-        // Save location to database
         function saveLocation(position) {
             if (!db) {
                 console.error('Database not initialized');
@@ -491,8 +519,8 @@
             try {
                 const stmt = db.prepare(`
                     INSERT INTO locations 
-                    (latitude, longitude, accuracy, altitude, altitude_accuracy, speed, heading)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (latitude, longitude, accuracy, altitude, altitude_accuracy, speed, heading, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 `);
 
                 stmt.run([
@@ -502,100 +530,94 @@
                     position.coords.altitude,
                     position.coords.altitudeAccuracy,
                     position.coords.speed,
-                    position.coords.heading
+                    position.coords.heading,
+                    position.timestamp
                 ]);
 
                 stmt.free();
 
-                // Save to localStorage
-                saveDatabase();
+                // Save database to localStorage
+                const data = db.export();
+                const buffer = Array.from(data);
+                localStorage.setItem('locationDb', JSON.stringify(buffer));
 
-                // Update stats
-                updateStats();
-
-                console.log('Location saved to database');
-
-                // Show success message
-                const status = document.getElementById('status');
-                status.textContent = '💾 Location saved to database!';
-                status.classList.add('show');
-                setTimeout(() => {
-                    status.classList.remove('show');
-                }, 2000);
-
+                console.log('✅ Location saved to database');
+                
+                // Update storage info
+                checkStorageQuota();
             } catch (error) {
-                console.error('Error saving location:', error);
+                console.error('❌ Failed to save location:', error);
             }
         }
 
-        // Update statistics
-        function updateStats() {
-            if (!db) return;
+        async function showHistory() {
+            const historySection = document.getElementById('historySection');
+            const historyContent = document.getElementById('historyContent');
+            
+            // Hide location info
+            document.getElementById('locationInfo').classList.remove('show');
+            
+            historySection.classList.add('show');
+            historyContent.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading history...</p></div>';
 
-            const result = db.exec('SELECT COUNT(*) as count FROM locations');
-            if (result.length > 0) {
-                const count = result[0].values[0][0];
-                document.getElementById('locationCount').textContent = count;
-                document.getElementById('dbStatsSection').style.display = count > 0 ? 'block' : 'none';
-            }
-        }
-
-        // Show history
-        function showHistory() {
             if (!db) {
-                alert('Database not initialized');
+                historyContent.innerHTML = '<div class="no-history">Database not initialized</div>';
                 return;
             }
 
-            const historySection = document.getElementById('historySection');
-            const historyList = document.getElementById('historyList');
-            
-            // Hide current location info
-            document.getElementById('locationInfo').classList.remove('show');
-            
-            // Get all locations from database
-            const result = db.exec('SELECT * FROM locations ORDER BY timestamp DESC LIMIT 50');
-            
-            if (result.length === 0 || result[0].values.length === 0) {
-                historyList.innerHTML = '<p style="text-align: center; color: #999;">No locations saved yet. Get your location to start tracking!</p>';
-            } else {
-                const columns = result[0].columns;
-                const values = result[0].values;
-                
-                let html = '';
-                values.forEach(row => {
-                    const location = {};
-                    columns.forEach((col, i) => {
-                        location[col] = row[i];
-                    });
+            try {
+                const results = db.exec('SELECT * FROM locations ORDER BY timestamp DESC LIMIT 100');
+
+                if (!results.length || !results[0].values.length) {
+                    historyContent.innerHTML = '<div class="no-history">No location history yet. Start tracking to see your history!</div>';
+                    return;
+                }
+
+                let tableHTML = `
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Date/Time</th>
+                                <th>Latitude</th>
+                                <th>Longitude</th>
+                                <th>Accuracy</th>
+                                <th>Speed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                results[0].values.forEach(row => {
+                    const [id, lat, lon, accuracy, altitude, altAcc, speed, heading, timestamp] = row;
+                    const date = new Date(timestamp);
                     
-                    html += `
-                        <div class="history-item" onclick="showLocationOnMap(${location.latitude}, ${location.longitude})">
-                            <div class="history-item-header">
-                                📍 ${new Date(location.timestamp).toLocaleString()}
-                            </div>
-                            <div class="history-item-details">
-                                Lat: ${location.latitude.toFixed(6)}°, 
-                                Lon: ${location.longitude.toFixed(6)}°, 
-                                Accuracy: ${location.accuracy ? location.accuracy.toFixed(0) + 'm' : 'N/A'}
-                            </div>
-                        </div>
+                    tableHTML += `
+                        <tr onclick="showLocationOnMap(${lat}, ${lon})">
+                            <td>${date.toLocaleString()}</td>
+                            <td>${lat.toFixed(6)}°</td>
+                            <td>${lon.toFixed(6)}°</td>
+                            <td>${accuracy ? accuracy.toFixed(0) + 'm' : 'N/A'}</td>
+                            <td>${speed ? (speed * 3.6).toFixed(1) + ' km/h' : 'N/A'}</td>
+                        </tr>
                     `;
                 });
-                
-                historyList.innerHTML = html;
+
+                tableHTML += '</tbody></table>';
+                historyContent.innerHTML = tableHTML;
+
+                const count = results[0].values.length;
+                historyContent.insertAdjacentHTML('afterbegin', 
+                    `<p style="color: #666; margin-bottom: 10px;">Showing ${count} most recent location${count > 1 ? 's' : ''}</p>`
+                );
+            } catch (error) {
+                console.error('Failed to load history:', error);
+                historyContent.innerHTML = '<div class="no-history">Error loading history</div>';
             }
-            
-            historySection.classList.add('show');
         }
 
-        // Show location on map
         function showLocationOnMap(lat, lon) {
-            document.getElementById('historySection').classList.remove('show');
             document.getElementById('locationInfo').classList.add('show');
-            
-            document.getElementById('latitude').textContent = lat.toFixed(6) + '°';
-            document.getElementById('longitude').textContent = lon.toFixed(6) + '°';
+            document.getElementById('historySection').classList.remove('show');
             
             const mapContainer = document.getElementById('mapContainer');
             const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed`;
@@ -608,80 +630,83 @@
                     referrerpolicy="no-referrer-when-downgrade">
                 </iframe>
             `;
+
+            document.getElementById('locationInfo').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Clear history
         function clearHistory() {
             if (!db) return;
-            
-            if (confirm('Are you sure you want to delete all saved locations? This cannot be undone.')) {
-                db.run('DELETE FROM locations');
-                saveDatabase();
-                updateStats();
-                document.getElementById('historySection').classList.remove('show');
-                alert('All locations have been deleted.');
+
+            if (confirm('Are you sure you want to delete all location history? This cannot be undone.')) {
+                try {
+                    db.run('DELETE FROM locations');
+                    db.run('VACUUM');
+                    
+                    const data = db.export();
+                    const buffer = Array.from(data);
+                    localStorage.setItem('locationDb', JSON.stringify(buffer));
+
+                    console.log('✅ History cleared');
+                    alert('Location history has been cleared');
+                    
+                    document.getElementById('historySection').classList.remove('show');
+                    checkStorageQuota();
+                } catch (error) {
+                    console.error('❌ Failed to clear history:', error);
+                    alert('Failed to clear history. Please try again.');
+                }
             }
         }
 
-        // PWA Install functionality
-        let deferredPrompt;
+        async function checkStorageQuota() {
+            if (!navigator.storage || !navigator.storage.estimate) {
+                return;
+            }
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installBanner').classList.add('show');
-        });
+            try {
+                const estimate = await navigator.storage.estimate();
+                const usage = estimate.usage || 0;
+                const quota = estimate.quota || 0;
+                const percentUsed = (usage / quota * 100).toFixed(2);
 
-        function installApp() {
-            if (!deferredPrompt) return;
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted the install prompt');
+                const usageMB = (usage / 1024 / 1024).toFixed(2);
+                const quotaMB = (quota / 1024 / 1024).toFixed(2);
+
+                const storageInfo = document.getElementById('storageInfo');
+                if (storageInfo) {
+                    storageInfo.innerHTML = `
+                        💾 Storage: ${usageMB} MB used of ${quotaMB} MB (${percentUsed}%)
+                    `;
+
+                    if (percentUsed > 80) {
+                        storageInfo.style.background = '#fff3cd';
+                        storageInfo.style.color = '#856404';
+                        storageInfo.innerHTML += ' ⚠️ <strong>Storage almost full!</strong> Consider clearing old data.';
+                    }
                 }
-                deferredPrompt = null;
-                document.getElementById('installBanner').classList.remove('show');
-            });
+
+                console.log(`Storage: ${usageMB}MB / ${quotaMB}MB (${percentUsed}%)`);
+            } catch (error) {
+                console.error('Failed to check storage:', error);
+            }
         }
 
-        function dismissInstallBanner() {
-            document.getElementById('installBanner').classList.remove('show');
-        }
-
-        window.addEventListener('appinstalled', () => {
-            console.log('PWA was installed');
-            document.getElementById('installBanner').classList.remove('show');
-        });
-
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                const swPath = './sw.js';
-                navigator.serviceWorker.register(swPath, { scope: BASE_PATH })
-                    .then((registration) => {
-                        console.log('Service Worker registered:', registration.scope);
-                    })
-                    .catch((error) => {
-                        console.log('Service Worker registration failed:', error);
-                    });
-            });
-        }
-
+        // ============================================================================
+        // LOCATION FUNCTIONS (iOS-Optimized)
+        // ============================================================================
         function getLocation() {
             const button = document.getElementById('getLocationBtn');
             const errorMsg = document.getElementById('errorMsg');
             const status = document.getElementById('status');
             const locationInfo = document.getElementById('locationInfo');
             
-            // Hide history
             document.getElementById('historySection').classList.remove('show');
-            
             errorMsg.classList.remove('show');
             errorMsg.textContent = '';
             status.classList.remove('show');
             
             if (!navigator.geolocation) {
-                showError('Geolocation is not supported by your browser');
+                showError('❌ Geolocation is not supported by your browser');
                 return;
             }
             
@@ -690,15 +715,18 @@
             
             status.textContent = '🔍 Requesting location access...';
             status.classList.add('show');
+
+            // iOS-optimized options
+            const options = {
+                enableHighAccuracy: true,  // CRITICAL for iOS GPS
+                timeout: isIOS ? 15000 : 10000,  // iOS needs more time
+                maximumAge: 0  // Always get fresh location
+            };
             
             navigator.geolocation.getCurrentPosition(
                 successCallback,
                 errorCallback,
-                {
-                    enableHighAccuracy: true,
-                    timeout: 60000,
-                    maximumAge: 0
-                }
+                options
             );
         }
         
@@ -720,23 +748,9 @@
             document.getElementById('accuracy').textContent = accuracy.toFixed(0) + ' meters';
             document.getElementById('timestamp').textContent = new Date(position.timestamp).toLocaleTimeString();
             
-            if (altitude !== null) {
-                document.getElementById('altitude').textContent = altitude.toFixed(1) + ' meters';
-            } else {
-                document.getElementById('altitude').textContent = 'Not available';
-            }
-            
-            if (altitudeAccuracy !== null) {
-                document.getElementById('altitudeAccuracy').textContent = '±' + altitudeAccuracy.toFixed(1) + ' meters';
-            } else {
-                document.getElementById('altitudeAccuracy').textContent = 'Not available';
-            }
-            
-            if (speed !== null) {
-                document.getElementById('speed').textContent = (speed * 3.6).toFixed(1) + ' km/h';
-            } else {
-                document.getElementById('speed').textContent = 'Stationary';
-            }
+            document.getElementById('altitude').textContent = altitude !== null ? altitude.toFixed(1) + ' meters' : 'Not available';
+            document.getElementById('altitudeAccuracy').textContent = altitudeAccuracy !== null ? '±' + altitudeAccuracy.toFixed(1) + ' meters' : 'Not available';
+            document.getElementById('speed').textContent = speed !== null ? (speed * 3.6).toFixed(1) + ' km/h' : 'Stationary';
             
             if (heading !== null) {
                 const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -779,15 +793,15 @@
             
             switch(error.code) {
                 case error.PERMISSION_DENIED:
-                    errorMessage = '❌ Location access denied. Please enable location permissions in your browser settings.';
+                    errorMessage = '❌ Location access denied. Please enable location permissions in your ' + 
+                                 (isIOS ? 'Settings → Safari → Location' : 'browser settings');
                     break;
                 case error.POSITION_UNAVAILABLE:
-                    errorMessage = '⚠️ Location information is unavailable. Please check your device settings.';
+                    errorMessage = '⚠️ Location information is unavailable. Please check your device settings and try again.';
                     break;
                 case error.TIMEOUT:
                     errorMessage = '⏱️ Location request timed out. Please try again.';
                     break;
-                case error.UNKNOWN_ERROR:
                 default:
                     errorMessage = '❗ An unknown error occurred. Please try again.';
                     break;
@@ -807,74 +821,142 @@
             errorMsg.classList.add('show');
         }
 
-        // Initialize database when page loads
+        // ============================================================================
+        // PWA INSTALLATION
+        // ============================================================================
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBanner').classList.add('show');
+        });
+
+        function installPWA() {
+            if (!deferredPrompt) return;
+
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('PWA installed');
+                }
+                deferredPrompt = null;
+                document.getElementById('installBanner').classList.remove('show');
+            });
+        }
+
+        function dismissInstallBanner() {
+            document.getElementById('installBanner').classList.remove('show');
+        }
+
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            document.getElementById('installBanner').classList.remove('show');
+        });
+
+        // ============================================================================
+        // SERVICE WORKER WITH AUTO-UPDATE AND DATABASE SAFETY
+        // ============================================================================
+        if ('serviceWorker' in navigator) {
+            let refreshing = false;
+            let updateAvailable = false;
+
+            navigator.serviceWorker.register('./service-worker.js')
+                .then((registration) => {
+                    console.log('[App] Service Worker registered:', registration.scope);
+
+                    // Check for updates on page load
+                    registration.update();
+
+                    // Check for updates every 60 seconds
+                    setInterval(() => {
+                        registration.update();
+                    }, 60000);
+
+                    // Detect when a new service worker is installing
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        console.log('[App] New service worker found, installing...');
+
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    console.log('[App] New version available');
+                                    updateAvailable = true;
+                                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                } else {
+                                    console.log('[App] Content cached for offline use');
+                                }
+                            }
+                        });
+                    });
+                })
+                .catch((error) => {
+                    console.error('[App] Service Worker registration failed:', error);
+                });
+
+            // Reload when new service worker takes control
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing && updateAvailable) {
+                    console.log('[App] New service worker activated, preparing to reload...');
+                    refreshing = true;
+                    handleUpdateWithDatabase();
+                }
+            });
+
+            // Listen for messages from service worker
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'SW_UPDATED') {
+                    console.log('[App] Service worker updated to version:', event.data.version);
+                }
+            });
+
+            // Request persistent storage
+            if (navigator.storage && navigator.storage.persist) {
+                navigator.storage.persist().then((persistent) => {
+                    console.log(persistent ? '✅ Persistent storage granted' : '⚠️ Persistent storage not granted');
+                });
+            }
+        }
+
+        // Handle update with database safety
+        async function handleUpdateWithDatabase() {
+            try {
+                // Save database before reload
+                if (db) {
+                    const data = db.export();
+                    const buffer = Array.from(data);
+                    localStorage.setItem('locationDb', JSON.stringify(buffer));
+                    console.log('✅ Database saved before update');
+                }
+
+                // Show notification
+                const notification = document.getElementById('updateNotification');
+                notification.classList.add('show');
+
+                // Auto-reload after 5 seconds
+                setTimeout(() => reloadApp(), 5000);
+            } catch (error) {
+                console.error('Error saving database:', error);
+                // Reload anyway after delay
+                setTimeout(() => reloadApp(), 2000);
+            }
+        }
+
+        function reloadApp() {
+            console.log('[App] Reloading application...');
+            window.location.reload();
+        }
+
+        // ============================================================================
+        // INITIALIZATION
+        // ============================================================================
         window.addEventListener('load', () => {
             initDatabase();
-        });
 
-
-
-
-        // Service Worker Registration with Auto-Update
-    if ('serviceWorker' in navigator) {
-    let refreshing = false;
-
-    // Register the service worker
-    navigator.serviceWorker.register('./service-worker.js')
-        .then((registration) => {
-        console.log('[App] Service Worker registered:', registration.scope);
-
-        // Check for updates on page load
-        registration.update();
-
-        // Check for updates every 60 seconds
-        setInterval(() => {
-            registration.update();
-        }, 60000);
-
-        // Detect when a new service worker is installing
-        registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            console.log('[App] New service worker found, installing...');
-
-            newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed') {
-                if (navigator.serviceWorker.controller) {
-                // New service worker available
-                console.log('[App] New version available, updating...');
-                
-                // Tell the new service worker to skip waiting
-                newWorker.postMessage({ type: 'SKIP_WAITING' });
-                } else {
-                // First time installation
-                console.log('[App] Content cached for offline use');
-                }
+            // Show iOS notice if on iOS
+            if (isIOS) {
+                document.getElementById('iosNotice').classList.add('show');
             }
-            });
         });
-        })
-        .catch((error) => {
-        console.error('[App] Service Worker registration failed:', error);
-        });
-
-    // Reload the page when the new service worker takes control
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-        console.log('[App] New service worker activated, reloading page...');
-        refreshing = true;
-        window.location.reload();
-        }
-    });
-
-    // Listen for messages from the service worker
-    navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'SW_UPDATED') {
-        console.log('[App] Service worker updated to version:', event.data.version);
-        }
-    });
-    }
-
-
     </script>
 </body>
 </html>
