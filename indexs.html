@@ -3,22 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#667eea">
-    <meta name="description" content="Track your location with GPS and view it on Google Maps">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Location Tracker">
-    
     <title>Geolocation with Google Maps</title>
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- Icons for iOS -->
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-    
     <style>
         * {
             margin: 0;
@@ -188,36 +173,6 @@
         .status.show {
             display: block;
         }
-
-        .install-banner {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 15px;
-            text-align: center;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .install-banner.show {
-            display: flex;
-        }
-
-        .install-banner button {
-            background: white;
-            color: #667eea;
-            padding: 10px 20px;
-            font-size: 14px;
-            margin: 0;
-        }
-
-        .install-banner button:hover {
-            background: #f0f0f0;
-        }
         
         @media (max-width: 600px) {
             h1 {
@@ -227,24 +182,11 @@
             .map-container iframe {
                 height: 350px;
             }
-
-            .install-banner {
-                flex-direction: column;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Install prompt banner -->
-        <div id="installBanner" class="install-banner">
-            <span>📱 Install this app on your home screen for quick access!</span>
-            <div>
-                <button id="installBtn" onclick="installApp()">Install</button>
-                <button onclick="dismissInstallBanner()" style="background: transparent; color: white; border: 1px solid white;">Later</button>
-            </div>
-        </div>
-
         <h1>📍 Location Tracker</h1>
         
         <div class="button-container">
@@ -309,57 +251,6 @@
     </div>
 
     <script>
-        // PWA Install functionality
-        let deferredPrompt;
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent the mini-infobar from appearing on mobile
-            e.preventDefault();
-            // Stash the event so it can be triggered later
-            deferredPrompt = e;
-            // Show the install banner
-            document.getElementById('installBanner').classList.add('show');
-        });
-
-        function installApp() {
-            if (!deferredPrompt) {
-                return;
-            }
-            // Show the install prompt
-            deferredPrompt.prompt();
-            // Wait for the user to respond to the prompt
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted the install prompt');
-                }
-                deferredPrompt = null;
-                // Hide the banner
-                document.getElementById('installBanner').classList.remove('show');
-            });
-        }
-
-        function dismissInstallBanner() {
-            document.getElementById('installBanner').classList.remove('show');
-        }
-
-        window.addEventListener('appinstalled', () => {
-            console.log('PWA was installed');
-            document.getElementById('installBanner').classList.remove('show');
-        });
-
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then((registration) => {
-                        console.log('Service Worker registered successfully:', registration.scope);
-                    })
-                    .catch((error) => {
-                        console.log('Service Worker registration failed:', error);
-                    });
-            });
-        }
-
         function getLocation() {
             const button = document.getElementById('getLocationBtn');
             const errorMsg = document.getElementById('errorMsg');
@@ -511,6 +402,12 @@
             errorMsg.textContent = message;
             errorMsg.classList.add('show');
         }
+        
+        // Optional: Get location automatically on page load
+        window.addEventListener('load', () => {
+            // Uncomment the next line if you want to get location automatically
+            // getLocation();
+        });
     </script>
 </body>
 </html>
