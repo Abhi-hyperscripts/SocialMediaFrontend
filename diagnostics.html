@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Diagnostics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .status-box {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .status-box h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .pass { color: #0a0; font-weight: bold; }
+        .fail { color: #c00; font-weight: bold; }
+        .info { color: #05f; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #764ba2; }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .test-result {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 PWA Diagnostic Tool</h1>
+    <p>This page will help diagnose why your PWA isn't working on Android.</p>
+
+    <div class="status-box">
+        <h3>📍 Current URL</h3>
+        <div id="urlInfo"></div>
+    </div>
+
+    <div class="status-box">
+        <h3>🔒 HTTPS Status</h3>
+        <div id="httpsStatus"></div>
+    </div>
+
+    <div class="status-box">
+        <h3>📱 Browser Support</h3>
+        <div id="browserSupport"></div>
+    </div>
+
+    <div class="status-box">
+        <h3>📄 Manifest Status</h3>
+        <button onclick="checkManifest()">Check Manifest</button>
+        <div id="manifestStatus"></div>
+    </div>
+
+    <div class="status-box">
+        <h3>⚙️ Service Worker Status</h3>
+        <button onclick="checkServiceWorker()">Check Service Worker</button>
+        <div id="swStatus"></div>
+    </div>
+
+    <div class="status-box">
+        <h3>🖼️ Icon Status</h3>
+        <button onclick="checkIcons()">Check Icons</button>
+        <div id="iconStatus"></div>
+    </div>
+
+    <div class="status-box">
+        <h3>📊 Console Logs</h3>
+        <div id="consoleLogs" style="max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="status-box">
+        <h3>🎯 Recommendations</h3>
+        <div id="recommendations"></div>
+    </div>
+
+    <script>
+        const logs = [];
+        
+        // Capture console logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            logs.push({ type: 'log', message: args.join(' ') });
+            updateConsoleLogs();
+            originalLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            logs.push({ type: 'error', message: args.join(' ') });
+            updateConsoleLogs();
+            originalError.apply(console, args);
+        };
+
+        function updateConsoleLogs() {
+            const logsDiv = document.getElementById('consoleLogs');
+            logsDiv.innerHTML = logs.map(log => 
+                `<div style="color: ${log.type === 'error' ? 'red' : 'black'}">
+                    [${log.type}] ${log.message}
+                </div>`
+            ).join('');
+        }
+
+        // Check URL
+        function checkURL() {
+            const urlDiv = document.getElementById('urlInfo');
+            const currentURL = window.location.href;
+            const protocol = window.location.protocol;
+            const hostname = window.location.hostname;
+            const pathname = window.location.pathname;
+            
+            urlDiv.innerHTML = `
+                <div class="test-result">
+                    <strong>Full URL:</strong> ${currentURL}<br>
+                    <strong>Protocol:</strong> ${protocol}<br>
+                    <strong>Hostname:</strong> ${hostname}<br>
+                    <strong>Path:</strong> ${pathname}
+                </div>
+            `;
+        }
+
+        // Check HTTPS
+        function checkHTTPS() {
+            const httpsDiv = document.getElementById('httpsStatus');
+            const isHTTPS = window.location.protocol === 'https:';
+            const isLocalhost = window.location.hostname === 'localhost' || 
+                                window.location.hostname === '127.0.0.1';
+            
+            if (isHTTPS || isLocalhost) {
+                httpsDiv.innerHTML = `<span class="pass">✅ PASS</span> - Site is secure (HTTPS or localhost)`;
+            } else {
+                httpsDiv.innerHTML = `<span class="fail">❌ FAIL</span> - PWA requires HTTPS! You're using HTTP.`;
+            }
+        }
+
+        // Check browser support
+        function checkBrowserSupport() {
+            const browserDiv = document.getElementById('browserSupport');
+            const support = {
+                serviceWorker: 'serviceWorker' in navigator,
+                manifest: 'onbeforeinstallprompt' in window || window.navigator.standalone !== undefined,
+                geolocation: 'geolocation' in navigator
+            };
+            
+            browserDiv.innerHTML = `
+                <div class="test-result">
+                    Service Worker: ${support.serviceWorker ? '<span class="pass">✅ Supported</span>' : '<span class="fail">❌ Not Supported</span>'}<br>
+                    Install Prompt: ${support.manifest ? '<span class="pass">✅ Supported</span>' : '<span class="fail">❌ Not Supported</span>'}<br>
+                    Geolocation: ${support.geolocation ? '<span class="pass">✅ Supported</span>' : '<span class="fail">❌ Not Supported</span>'}
+                </div>
+                <div style="margin-top: 10px;">
+                    <strong>User Agent:</strong><br>
+                    <pre style="font-size: 11px;">${navigator.userAgent}</pre>
+                </div>
+            `;
+        }
+
+        // Check manifest
+        async function checkManifest() {
+            const manifestDiv = document.getElementById('manifestStatus');
+            manifestDiv.innerHTML = '<span class="info">Checking...</span>';
+            
+            try {
+                // Try to fetch manifest
+                const manifestLink = document.querySelector('link[rel="manifest"]');
+                if (!manifestLink) {
+                    manifestDiv.innerHTML = '<span class="fail">❌ No manifest link found in HTML</span>';
+                    return;
+                }
+                
+                const manifestURL = new URL(manifestLink.href, window.location.href).href;
+                manifestDiv.innerHTML = `<span class="info">Fetching: ${manifestURL}</span><br>`;
+                
+                const response = await fetch(manifestURL);
+                
+                if (!response.ok) {
+                    manifestDiv.innerHTML = `<span class="fail">❌ Manifest fetch failed: ${response.status} ${response.statusText}</span><br>` +
+                                          `<strong>URL tried:</strong> ${manifestURL}`;
+                    return;
+                }
+                
+                const manifest = await response.json();
+                manifestDiv.innerHTML = `
+                    <span class="pass">✅ Manifest loaded successfully</span><br>
+                    <strong>URL:</strong> ${manifestURL}<br>
+                    <strong>Name:</strong> ${manifest.name || 'Not set'}<br>
+                    <strong>Start URL:</strong> ${manifest.start_url || 'Not set'}<br>
+                    <strong>Display:</strong> ${manifest.display || 'Not set'}<br>
+                    <strong>Icons:</strong> ${manifest.icons ? manifest.icons.length : 0} defined<br>
+                    <details>
+                        <summary>View Full Manifest</summary>
+                        <pre>${JSON.stringify(manifest, null, 2)}</pre>
+                    </details>
+                `;
+            } catch (error) {
+                manifestDiv.innerHTML = `<span class="fail">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        // Check Service Worker
+        async function checkServiceWorker() {
+            const swDiv = document.getElementById('swStatus');
+            swDiv.innerHTML = '<span class="info">Checking...</span>';
+            
+            if (!('serviceWorker' in navigator)) {
+                swDiv.innerHTML = '<span class="fail">❌ Service Workers not supported in this browser</span>';
+                return;
+            }
+            
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                
+                if (registrations.length === 0) {
+                    swDiv.innerHTML = `
+                        <span class="fail">❌ No Service Worker registered</span><br>
+                        <button onclick="registerServiceWorker()">Try to Register</button>
+                    `;
+                    return;
+                }
+                
+                const reg = registrations[0];
+                const state = reg.active ? reg.active.state : 'No active worker';
+                
+                swDiv.innerHTML = `
+                    <span class="pass">✅ Service Worker found</span><br>
+                    <strong>Scope:</strong> ${reg.scope}<br>
+                    <strong>State:</strong> ${state}<br>
+                    <strong>Status:</strong> ${reg.active ? 'Active' : reg.installing ? 'Installing' : reg.waiting ? 'Waiting' : 'Unknown'}<br>
+                    <button onclick="unregisterServiceWorker()">Unregister</button>
+                    <button onclick="registerServiceWorker()">Re-register</button>
+                `;
+            } catch (error) {
+                swDiv.innerHTML = `<span class="fail">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function registerServiceWorker() {
+            const swDiv = document.getElementById('swStatus');
+            try {
+                swDiv.innerHTML = '<span class="info">Registering...</span>';
+                const registration = await navigator.serviceWorker.register('./sw.js');
+                swDiv.innerHTML = `<span class="pass">✅ Service Worker registered successfully!</span><br>` +
+                                 `<strong>Scope:</strong> ${registration.scope}`;
+                setTimeout(checkServiceWorker, 1000);
+            } catch (error) {
+                swDiv.innerHTML = `<span class="fail">❌ Registration failed: ${error.message}</span>`;
+            }
+        }
+
+        async function unregisterServiceWorker() {
+            const swDiv = document.getElementById('swStatus');
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                }
+                swDiv.innerHTML = '<span class="pass">✅ Service Worker unregistered</span>';
+                setTimeout(checkServiceWorker, 1000);
+            } catch (error) {
+                swDiv.innerHTML = `<span class="fail">❌ Unregister failed: ${error.message}</span>`;
+            }
+        }
+
+        // Check Icons
+        async function checkIcons() {
+            const iconDiv = document.getElementById('iconStatus');
+            iconDiv.innerHTML = '<span class="info">Checking...</span>';
+            
+            const icons = [
+                { name: 'icon-192.png', path: './icon-192.png' },
+                { name: 'icon-512.png', path: './icon-512.png' }
+            ];
+            
+            let results = '';
+            
+            for (const icon of icons) {
+                try {
+                    const response = await fetch(icon.path);
+                    if (response.ok) {
+                        results += `<span class="pass">✅ ${icon.name} exists</span><br>`;
+                    } else {
+                        results += `<span class="fail">❌ ${icon.name} not found (${response.status})</span><br>`;
+                    }
+                } catch (error) {
+                    results += `<span class="fail">❌ ${icon.name} error: ${error.message}</span><br>`;
+                }
+            }
+            
+            iconDiv.innerHTML = results;
+        }
+
+        // Generate recommendations
+        function generateRecommendations() {
+            const recDiv = document.getElementById('recommendations');
+            const recommendations = [];
+            
+            // Check HTTPS
+            if (window.location.protocol !== 'https:' && 
+                window.location.hostname !== 'localhost' && 
+                window.location.hostname !== '127.0.0.1') {
+                recommendations.push('🔴 <strong>CRITICAL:</strong> Your site must use HTTPS for PWA to work');
+            }
+            
+            // Check if on GitHub Pages
+            if (window.location.hostname.includes('github.io')) {
+                recommendations.push('📘 You\'re on GitHub Pages - make sure files are in repository root');
+                recommendations.push('📘 Your URL should be: https://username.github.io/repo-name/');
+            }
+            
+            // Browser check
+            const isChrome = navigator.userAgent.includes('Chrome');
+            const isAndroid = navigator.userAgent.includes('Android');
+            
+            if (isAndroid && !isChrome) {
+                recommendations.push('📱 Try using Chrome on Android for best PWA support');
+            }
+            
+            if (recommendations.length === 0) {
+                recommendations.push('✅ No immediate issues detected. Click buttons above to run detailed checks.');
+            }
+            
+            recDiv.innerHTML = recommendations.map(rec => `<div class="test-result">${rec}</div>`).join('');
+        }
+
+        // Run checks on load
+        window.addEventListener('load', () => {
+            checkURL();
+            checkHTTPS();
+            checkBrowserSupport();
+            generateRecommendations();
+        });
+    </script>
+</body>
+</html>

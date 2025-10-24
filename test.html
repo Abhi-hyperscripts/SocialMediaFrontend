@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page - Is GitHub Pages Working?</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        .box {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        h1 { margin-top: 0; }
+        .success {
+            background: #4CAF50;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        .info {
+            text-align: left;
+            margin: 10px 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>🎉 GitHub Pages is Working!</h1>
+        
+        <div class="success">
+            ✅ SUCCESS
+        </div>
+        
+        <p>If you can see this page on your Android phone, then GitHub Pages is working correctly!</p>
+        
+        <div class="info">
+            <h3>Your Information:</h3>
+            <p><strong>Current URL:</strong><br><span id="currentUrl"></span></p>
+            <p><strong>Browser:</strong><br><span id="browser"></span></p>
+            <p><strong>Device:</strong><br><span id="device"></span></p>
+            <p><strong>Connection:</strong><br><span id="connection"></span></p>
+        </div>
+        
+        <h3>Next Steps:</h3>
+        <ol style="text-align: left;">
+            <li>If you see this page ✅ - GitHub Pages works!</li>
+            <li>Now try opening: <code>diagnostics.html</code></li>
+            <li>Then try opening: <code>index.html</code></li>
+            <li>If those don't work, the issue is with those specific files</li>
+        </ol>
+        
+        <button onclick="testLocation()">Test Geolocation</button>
+        <div id="locationResult" style="margin-top: 20px;"></div>
+    </div>
+    
+    <div class="box">
+        <h3>File Checklist</h3>
+        <p>Click to check if each file exists:</p>
+        <button onclick="checkFile('index.html')">Check index.html</button>
+        <button onclick="checkFile('manifest.json')">Check manifest.json</button>
+        <button onclick="checkFile('sw.js')">Check sw.js</button>
+        <button onclick="checkFile('icon-192.png')">Check icon-192.png</button>
+        <button onclick="checkFile('icon-512.png')">Check icon-512.png</button>
+        <div id="fileResults" style="margin-top: 15px; text-align: left;"></div>
+    </div>
+
+    <script>
+        // Display current information
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('browser').textContent = navigator.userAgent.includes('Chrome') ? 'Chrome' : 
+                                                          navigator.userAgent.includes('Firefox') ? 'Firefox' : 
+                                                          navigator.userAgent.includes('Safari') ? 'Safari' : 'Other';
+        document.getElementById('device').textContent = navigator.userAgent.includes('Android') ? 'Android' : 
+                                                        navigator.userAgent.includes('iPhone') ? 'iPhone' : 
+                                                        navigator.userAgent.includes('iPad') ? 'iPad' : 'Desktop';
+        document.getElementById('connection').textContent = navigator.onLine ? '✅ Online' : '❌ Offline';
+
+        // Test geolocation
+        function testLocation() {
+            const resultDiv = document.getElementById('locationResult');
+            resultDiv.innerHTML = '🔍 Requesting location...';
+            resultDiv.style.background = '#fff3cd';
+            resultDiv.style.padding = '10px';
+            resultDiv.style.borderRadius = '5px';
+            
+            if (!navigator.geolocation) {
+                resultDiv.innerHTML = '❌ Geolocation not supported';
+                resultDiv.style.background = '#f8d7da';
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resultDiv.innerHTML = `
+                        ✅ <strong>Geolocation Works!</strong><br>
+                        Latitude: ${position.coords.latitude.toFixed(4)}°<br>
+                        Longitude: ${position.coords.longitude.toFixed(4)}°<br>
+                        Accuracy: ${position.coords.accuracy.toFixed(0)}m
+                    `;
+                    resultDiv.style.background = '#d4edda';
+                },
+                (error) => {
+                    resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                    resultDiv.style.background = '#f8d7da';
+                }
+            );
+        }
+
+        // Check if files exist
+        async function checkFile(filename) {
+            const resultsDiv = document.getElementById('fileResults');
+            const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+            const url = window.location.origin + basePath + filename;
+            
+            resultsDiv.innerHTML += `<p>Checking ${filename}...</p>`;
+            
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                if (response.ok) {
+                    resultsDiv.innerHTML += `<p style="color: green;">✅ ${filename} - Found!</p>`;
+                } else {
+                    resultsDiv.innerHTML += `<p style="color: red;">❌ ${filename} - Not found (${response.status})</p>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += `<p style="color: red;">❌ ${filename} - Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
