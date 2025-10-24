@@ -1,19 +1,31 @@
 const CACHE_NAME = 'location-tracker-v1';
+
+// Get the base path from the service worker's location
+const BASE_PATH = self.location.pathname.substring(0, self.location.pathname.lastIndexOf('/') + 1);
+
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  BASE_PATH,
+  BASE_PATH + 'index.html',
+  BASE_PATH + 'manifest.json',
+  BASE_PATH + 'icon-192.png',
+  BASE_PATH + 'icon-512.png'
 ];
 
 // Install event - cache resources
 self.addEventListener('install', (event) => {
+  console.log('Service Worker installing...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        // Cache each URL individually and log errors
+        return Promise.all(
+          urlsToCache.map(url => {
+            return cache.add(url).catch(err => {
+              console.log('Failed to cache:', url, err);
+            });
+          })
+        );
       })
       .catch((error) => {
         console.log('Cache installation failed:', error);
@@ -24,6 +36,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -43,6 +56,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') {
     return;
   }
 
@@ -74,7 +92,7 @@ self.addEventListener('fetch', (event) => {
           return response;
         }).catch(() => {
           // Return offline page if available
-          return caches.match('/index.html');
+          return caches.match(BASE_PATH + 'index.html');
         });
       })
   );

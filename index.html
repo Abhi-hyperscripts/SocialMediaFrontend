@@ -12,12 +12,12 @@
     <title>Geolocation with Google Maps</title>
     
     <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
     
     <!-- Icons for iOS -->
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
     
     <style>
         * {
@@ -309,15 +309,15 @@
     </div>
 
     <script>
+        // Get the base path dynamically
+        const BASE_PATH = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        
         // PWA Install functionality
         let deferredPrompt;
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent the mini-infobar from appearing on mobile
             e.preventDefault();
-            // Stash the event so it can be triggered later
             deferredPrompt = e;
-            // Show the install banner
             document.getElementById('installBanner').classList.add('show');
         });
 
@@ -325,15 +325,12 @@
             if (!deferredPrompt) {
                 return;
             }
-            // Show the install prompt
             deferredPrompt.prompt();
-            // Wait for the user to respond to the prompt
             deferredPrompt.userChoice.then((choiceResult) => {
                 if (choiceResult.outcome === 'accepted') {
                     console.log('User accepted the install prompt');
                 }
                 deferredPrompt = null;
-                // Hide the banner
                 document.getElementById('installBanner').classList.remove('show');
             });
         }
@@ -350,13 +347,16 @@
         // Register service worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then((registration) => {
-                        console.log('Service Worker registered successfully:', registration.scope);
-                    })
-                    .catch((error) => {
-                        console.log('Service Worker registration failed:', error);
-                    });
+                const swPath = './sw.js';
+                navigator.serviceWorker.register(swPath, { 
+                    scope: BASE_PATH 
+                })
+                .then((registration) => {
+                    console.log('Service Worker registered:', registration.scope);
+                })
+                .catch((error) => {
+                    console.log('Service Worker registration failed:', error);
+                });
             });
         }
 
@@ -366,25 +366,21 @@
             const status = document.getElementById('status');
             const locationInfo = document.getElementById('locationInfo');
             
-            // Reset states
             errorMsg.classList.remove('show');
             errorMsg.textContent = '';
             status.classList.remove('show');
             
-            // Check if geolocation is supported
             if (!navigator.geolocation) {
                 showError('Geolocation is not supported by your browser');
                 return;
             }
             
-            // Disable button and show loading state
             button.disabled = true;
             button.textContent = 'Getting location...';
             
             status.textContent = '🔍 Requesting location access...';
             status.classList.add('show');
             
-            // Get current position
             navigator.geolocation.getCurrentPosition(
                 successCallback,
                 errorCallback,
@@ -401,7 +397,6 @@
             const status = document.getElementById('status');
             const locationInfo = document.getElementById('locationInfo');
             
-            // Extract coordinates
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
             const accuracy = position.coords.accuracy;
@@ -410,34 +405,29 @@
             const speed = position.coords.speed;
             const heading = position.coords.heading;
             
-            // Update UI with coordinates
             document.getElementById('latitude').textContent = lat.toFixed(6) + '°';
             document.getElementById('longitude').textContent = lon.toFixed(6) + '°';
             document.getElementById('accuracy').textContent = accuracy.toFixed(0) + ' meters';
             document.getElementById('timestamp').textContent = new Date(position.timestamp).toLocaleTimeString();
             
-            // Update altitude (may be null on some devices)
             if (altitude !== null) {
                 document.getElementById('altitude').textContent = altitude.toFixed(1) + ' meters';
             } else {
                 document.getElementById('altitude').textContent = 'Not available';
             }
             
-            // Update altitude accuracy
             if (altitudeAccuracy !== null) {
                 document.getElementById('altitudeAccuracy').textContent = '±' + altitudeAccuracy.toFixed(1) + ' meters';
             } else {
                 document.getElementById('altitudeAccuracy').textContent = 'Not available';
             }
             
-            // Update speed (null if stationary)
             if (speed !== null) {
                 document.getElementById('speed').textContent = (speed * 3.6).toFixed(1) + ' km/h';
             } else {
                 document.getElementById('speed').textContent = 'Stationary';
             }
             
-            // Update heading (direction of travel)
             if (heading !== null) {
                 const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
                 const index = Math.round(heading / 45) % 8;
@@ -446,19 +436,15 @@
                 document.getElementById('heading').textContent = 'Not moving';
             }
             
-            // Show location info section
             locationInfo.classList.add('show');
             
-            // Update status
             status.textContent = '✅ Location found successfully!';
             status.style.background = '#e8f5e9';
             status.style.color = '#2e7d32';
             
-            // Create Google Maps iframe
             const mapContainer = document.getElementById('mapContainer');
             const mapUrl = `https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed`;
             
-            // Create iframe element
             mapContainer.innerHTML = `
                 <iframe 
                     src="${mapUrl}"
@@ -468,11 +454,9 @@
                 </iframe>
             `;
             
-            // Reset button
             button.disabled = false;
             button.textContent = 'Update Location';
             
-            // Smooth scroll to location info
             locationInfo.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
         
@@ -498,11 +482,9 @@
             
             showError(errorMessage);
             
-            // Reset button
             button.disabled = false;
             button.textContent = 'Get My Location';
             
-            // Hide status
             document.getElementById('status').classList.remove('show');
         }
         

@@ -73,15 +73,14 @@
         <h3>Instructions:</h3>
         <ol>
             <li>Click both download buttons to save the icon files</li>
-            <li>Place the downloaded <code>icon-192.png</code> and <code>icon-512.png</code> files in the same folder as your HTML file</li>
-            <li>Upload all files (index.html, manifest.json, sw.js, icon-192.png, icon-512.png) to your web server</li>
-            <li>Access your app via HTTPS (required for PWA)</li>
-            <li>On mobile devices, you'll see an "Install" banner or option in the browser menu</li>
+            <li>Place the downloaded <code>icon-192.png</code> and <code>icon-512.png</code> files in your repository root</li>
+            <li>Commit and push all files to GitHub</li>
+            <li>Wait 1-2 minutes for GitHub Pages to deploy</li>
+            <li>Visit your site on mobile to install the PWA</li>
         </ol>
     </div>
 
     <script>
-        // Function to draw icon on canvas
         function drawIcon(canvas) {
             const ctx = canvas.getContext('2d');
             const size = canvas.width;
@@ -118,14 +117,13 @@
             ctx.closePath();
             ctx.fill();
             
-            // Inner circle (hole in pin)
+            // Inner circle
             ctx.fillStyle = '#667eea';
             ctx.beginPath();
             ctx.arc(centerX, topY, pinWidth * 0.15, 0, Math.PI * 2);
             ctx.fill();
         }
         
-        // Function to download canvas as PNG
         function downloadIcon(canvasId, filename) {
             const canvas = document.getElementById(canvasId);
             const link = document.createElement('a');
@@ -134,7 +132,6 @@
             link.click();
         }
         
-        // Draw icons on page load
         window.addEventListener('load', () => {
             drawIcon(document.getElementById('icon192'));
             drawIcon(document.getElementById('icon512'));
