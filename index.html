@@ -319,7 +319,7 @@
             </div>
         </div>
 
-        <h1>📍 Location Tracker with Abhishek</h1>
+        <h1>📍 Location Tracker with Abhishek 1</h1>
         
         <div id="dbStatus" class="status"></div>
         
@@ -811,6 +811,70 @@
         window.addEventListener('load', () => {
             initDatabase();
         });
+
+
+
+
+        // Service Worker Registration with Auto-Update
+    if ('serviceWorker' in navigator) {
+    let refreshing = false;
+
+    // Register the service worker
+    navigator.serviceWorker.register('./service-worker.js')
+        .then((registration) => {
+        console.log('[App] Service Worker registered:', registration.scope);
+
+        // Check for updates on page load
+        registration.update();
+
+        // Check for updates every 60 seconds
+        setInterval(() => {
+            registration.update();
+        }, 60000);
+
+        // Detect when a new service worker is installing
+        registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            console.log('[App] New service worker found, installing...');
+
+            newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                // New service worker available
+                console.log('[App] New version available, updating...');
+                
+                // Tell the new service worker to skip waiting
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                } else {
+                // First time installation
+                console.log('[App] Content cached for offline use');
+                }
+            }
+            });
+        });
+        })
+        .catch((error) => {
+        console.error('[App] Service Worker registration failed:', error);
+        });
+
+    // Reload the page when the new service worker takes control
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+        console.log('[App] New service worker activated, reloading page...');
+        refreshing = true;
+        window.location.reload();
+        }
+    });
+
+    // Listen for messages from the service worker
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'SW_UPDATED') {
+        console.log('[App] Service worker updated to version:', event.data.version);
+        }
+    });
+    }
+
+
     </script>
 </body>
 </html>
