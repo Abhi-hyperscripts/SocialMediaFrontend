@@ -1,4 +1,4 @@
-const CACHE_NAME = 'location-tracker-v2';
+const CACHE_NAME = 'location-tracker-v3'; // Increment this each time!
 
 // Get the base path from the service worker's location
 const BASE_PATH = self.location.pathname.substring(0, self.location.pathname.lastIndexOf('/') + 1);
@@ -14,6 +14,10 @@ const urlsToCache = [
 // Install event - cache resources
 self.addEventListener('install', (event) => {
   console.log('Service Worker installing...');
+  
+  // MOVE skipWaiting() HERE - call it immediately
+  self.skipWaiting();
+  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -31,12 +35,13 @@ self.addEventListener('install', (event) => {
         console.log('Cache installation failed:', error);
       })
   );
-  self.skipWaiting();
+  // REMOVED from here - was too late!
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('Service Worker activating...');
+  
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -47,9 +52,12 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
+    }).then(() => {
+      // MOVE clients.claim() HERE - inside the promise chain
+      return self.clients.claim();
     })
   );
-  self.clients.claim();
+  // REMOVED from here - was too late!
 });
 
 // Fetch event - serve from cache, fallback to network
