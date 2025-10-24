@@ -1,4 +1,4 @@
-const CACHE_NAME = 'location-tracker-v1';
+const CACHE_NAME = 'location-tracker-v2';
 
 // Get the base path from the service worker's location
 const BASE_PATH = self.location.pathname.substring(0, self.location.pathname.lastIndexOf('/') + 1);
