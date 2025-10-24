@@ -4,8 +4,8 @@
  * Fixed: Android now updates immediately without manual refresh
  */
 
-const CACHE_NAME = 'pwa-cache-v4';
-const CACHE_VERSION = 4;
+const CACHE_NAME = 'pwa-cache-v3';
+const CACHE_VERSION = 3;
 
 // Get base path
 const BASE_PATH = self.location.pathname.substring(0, self.location.pathname.lastIndexOf('/') + 1);
