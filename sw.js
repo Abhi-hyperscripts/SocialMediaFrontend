@@ -6,7 +6,7 @@
 // ============================================================================
 // VERSION - INCREMENT THIS TO TRIGGER UPDATE
 // ============================================================================
-const CACHE_VERSION = 5;
+const CACHE_VERSION = 6;
 const CACHE_NAME = 'pwa-v' + CACHE_VERSION;
 
 // ============================================================================
@@ -96,6 +96,8 @@ self.addEventListener('activate', (event) => {
     );
 });
 
+
+
 // ============================================================================
 // FETCH - Serve from cache, fallback to network
 // ============================================================================
@@ -113,8 +115,14 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Network first for HTML
-    if (request.headers.get('accept')?.includes('text/html')) {
+    // Network first for HTML, CSS, JS, and images
+    const accept = request.headers.get('accept') || '';
+    const isHTML = accept.includes('text/html');
+    const isCSS = accept.includes('text/css') || url.pathname.endsWith('.css');
+    const isJS = accept.includes('javascript') || url.pathname.endsWith('.js');
+    const isImage = accept.includes('image/') || /\.(jpg|jpeg|png|gif|webp|svg|ico)$/i.test(url.pathname);
+    
+    if (isHTML || isCSS || isJS || isImage) {
         event.respondWith(
             fetch(request)
                 .then(response => {
@@ -129,30 +137,15 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Cache first for assets
+    // Cache first for other assets (if any)
     event.respondWith(
         caches.match(request)
-            .then(cached => {
-                if (cached) {
-                    // Update in background
-                    fetch(request).then(response => {
-                        if (response.ok) {
-                            caches.open(CACHE_NAME).then(cache => cache.put(request, response));
-                        }
-                    }).catch(() => {});
-                    return cached;
-                }
-                
-                return fetch(request).then(response => {
-                    if (response.ok) {
-                        const clone = response.clone();
-                        caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-                    }
-                    return response;
-                });
-            })
+            .then(cached => cached || fetch(request))
     );
 });
+
+
+
 
 // ============================================================================
 // MESSAGES
