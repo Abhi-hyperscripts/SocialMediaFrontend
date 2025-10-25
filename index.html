@@ -26,6 +26,10 @@
 </head>
 <body>
     <div class="container">
+        <button onclick="enableNotifications()" class="secondary">
+            🔔 Enable Push Notifications
+        </button>
+        
         <h1>📍 Location Tracker</h1>
         <p class="subtitle">Track location • Capture photos • Upload files with GPS coordinates</p>
 
@@ -180,6 +184,39 @@
             onPermissionGranted: (perm) => console.log(`✅ ${perm} permission granted`),
             onPermissionDenied: (perm) => console.warn(`❌ ${perm} permission denied`)
         });
+    </script>
+    <!-- Add before the closing </body> tag -->
+    <script src="firebase-push.js"></script>
+    <script>
+        // Initialize Firebase Push when page loads
+        window.addEventListener('load', async () => {
+            console.log('Initializing Firebase Push...');
+            
+            const initialized = await firebasePush.init();
+            
+            if (initialized) {
+                console.log('✅ Firebase Push ready');
+                
+                // Listen for foreground messages
+                await firebasePush.onForegroundMessage((payload) => {
+                    console.log('📩 Message received:', payload);
+                    // You can display it in your app UI here
+                });
+            } else {
+                console.log('❌ Firebase Push not supported');
+            }
+        });
+        
+        // Add a button handler to enable notifications
+        function enableNotifications() {
+            firebasePush.requestPermission().then(token => {
+                if (token) {
+                    alert('✅ Notifications enabled!\nToken: ' + token.substring(0, 20) + '...');
+                } else {
+                    alert('❌ Failed to enable notifications');
+                }
+            });
+        }
     </script>
 </body>
 </html>
